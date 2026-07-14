@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Fitness Aero</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#2E9FD6" />
+<style>
+  :root {
+    --sky1: #A9E4F5;
+    --sky2: #4FB8E8;
+    --deep: #0B4C6B;
+    --leaf: #7ED6A8;
+    --leaf-deep: #2E9F6E;
+    --glass: rgba(255,255,255,0.55);
+    --glass-edge: rgba(255,255,255,0.85);
+    --text: #0B3A52;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.9) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 15%, rgba(255,255,255,0.55) 0%, transparent 35%),
+      linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 45%, #2E86C1 100%);
+    background-attachment: fixed;
+  }
+  .bubble {
+    position: fixed; border-radius: 50%;
+    background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.9), rgba(255,255,255,0.05) 60%, transparent 70%);
+    pointer-events: none;
+  }
+  .wrap { display: flex; justify-content: center; padding: 30px 14px 60px; position: relative; z-index: 1; }
+  .inner { width: 100%; max-width: 420px; }
+
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-edge);
+    border-radius: 26px;
+    padding: 22px 20px 18px;
+    box-shadow:
+      0 18px 40px rgba(11,76,107,0.35),
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      inset 0 -18px 30px -20px rgba(255,255,255,0.6);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: ""; position: absolute; top: -40%; left: -10%; width: 120%; height: 60%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.75), transparent);
+    border-radius: 50%; pointer-events: none;
+  }
+
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; position: relative; z-index: 1; }
+  .navbtn {
+    width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+    background: linear-gradient(180deg, #ffffff 0%, var(--sky2) 100%);
+    box-shadow: 0 3px 8px rgba(11,76,107,0.35), inset 0 1px 1px rgba(255,255,255,0.9);
+    color: var(--deep); font-size: 18px; display: flex; align-items: center; justify-content: center;
+  }
+  .titleblock { text-align: center; }
+  .daylabel {
+    font-size: 22px; font-weight: 700; color: var(--deep);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+    letter-spacing: 0.3px;
+  }
+  .datesub { font-size: 11px; color: var(--deep); opacity: 0.65; margin-top: 2px; }
+
+  .row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 8px;
+    margin-bottom: 8px; border-radius: 16px;
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(11,76,107,0.08);
+  }
+  .exlabel { font-size: 14px; font-weight: 600; color: var(--text); width: 78px; line-height: 1.15; white-space: pre-line; }
+  .steps { display: flex; flex-direction: column; gap: 4px; }
+  .stepbtn {
+    width: 26px; height: 20px; border-radius: 8px; border: none; cursor: pointer;
+    background: linear-gradient(180deg, #ffffff 0%, var(--leaf) 100%);
+    box-shadow: 0 2px 5px rgba(11,76,107,0.3), inset 0 1px 0 rgba(255,255,255,0.9);
+    color: var(--leaf-deep); font-size: 11px; display: flex; align-items: center; justify-content: center;
+    padding: 0;
+  }
+  .stepbtn:disabled { opacity: 0.35; cursor: default; }
+  .val {
+    margin-left: auto; font-size: 17px; font-weight: 700; color: var(--deep);
+    background: rgba(255,255,255,0.6); padding: 4px 10px; border-radius: 10px;
+    box-shadow: inset 0 1px 3px rgba(11,76,107,0.15);
+  }
+  .val.done { color: var(--leaf-deep); background: rgba(255,255,255,0.85); }
+
+  .progressRow { margin-top: 16px; display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+  .barTrack { height: 12px; background: rgba(255,255,255,0.5); border-radius: 20px; overflow: hidden; box-shadow: inset 0 1px 4px rgba(11,76,107,0.25); }
+  .barFill {
+    height: 100%; border-radius: 20px; transition: width 0.35s ease;
+    background: linear-gradient(180deg, #DFFDEC 0%, var(--leaf) 45%, var(--leaf-deep) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+  .pctText { font-size: 11px; color: var(--deep); margin-top: 4px; font-weight: 600; }
+  .calbtn {
+    width: 46px; height: 46px; border-radius: 16px; border: none; cursor: pointer;
+    background: linear-gradient(180deg, #ffffff 0%, var(--sky2) 100%);
+    box-shadow: 0 4px 10px rgba(11,76,107,0.35), inset 0 1px 1px rgba(255,255,255,0.9);
+    color: var(--deep); font-size: 19px;
+  }
+  .footnote { text-align: center; color: #eaf7ff; font-size: 11px; margin-top: 16px; text-shadow: 0 1px 2px rgba(11,76,107,0.4); }
+
+  .overlay { position: fixed; inset: 0; background: rgba(11,76,107,0.45); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-edge); border-radius: 24px; padding: 18px 18px 20px;
+    width: 100%; max-width: 380px; max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(11,76,107,0.4), inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+  .modalHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .monthLabel { font-size: 18px; font-weight: 700; color: var(--deep); }
+  .weekRow { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 6px; }
+  .weekRow div { text-align: center; font-size: 10px; color: var(--deep); opacity: 0.6; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
+  .daycell {
+    aspect-ratio: 1; border-radius: 10px; border: 1px solid rgba(255,255,255,0.6);
+    font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--deep); background: rgba(255,255,255,0.35);
+  }
+  .daycell.future { color: rgba(11,76,107,0.3); cursor: default; background: transparent; border-color: transparent; }
+  .daycell.today { border-color: var(--deep); border-width: 2px; }
+  .daycell.selected { box-shadow: 0 0 0 2px var(--deep) inset; }
+  .closebtn {
+    margin-top: 14px; width: 100%; border: none; border-radius: 14px; padding: 10px 0;
+    background: linear-gradient(180deg, #ffffff 0%, var(--sky2) 100%);
+    color: var(--deep); font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(11,76,107,0.3), inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+</style>
+</head>
+<body>
+<div class="bubble" style="width:220px;height:220px;top:-60px;left:-60px;"></div>
+<div class="bubble" style="width:140px;height:140px;bottom:10%;right:-40px;"></div>
+<div class="bubble" style="width:90px;height:90px;top:60%;left:-30px;"></div>
+
+<div class="wrap"><div class="inner">
+  <div class="card">
+    <div class="header">
+      <button class="navbtn" id="prevDay">&#8249;</button>
+      <div class="titleblock">
+        <div class="daylabel" id="dayLabel"></div>
+        <div class="datesub" id="dateSub"></div>
+      </div>
+      <button class="navbtn" id="nextDay">&#8250;</button>
+    </div>
+    <div id="rows"></div>
+    <div class="progressRow">
+      <div style="flex:1">
+        <div class="barTrack"><div class="barFill" id="barFill" style="width:0%"></div></div>
+        <div class="pctText" id="pctText">0% erledigt</div>
+      </div>
+      <button class="calbtn" id="openCal">&#128197;</button>
+    </div>
+  </div>
+  <div class="footnote">Fortschritt wird lokal auf deinem Handy gespeichert</div>
+</div></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modalHead">
+      <button class="navbtn" id="prevMonth" style="width:32px;height:32px;font-size:15px;">&#8249;</button>
+      <div class="monthLabel" id="monthLabel"></div>
+      <button class="navbtn" id="nextMonth" style="width:32px;height:32px;font-size:15px;">&#8250;</button>
+    </div>
+    <div class="weekRow"><div>M</div><div>D</div><div>M</div><div>D</div><div>F</div><div>S</div><div>S</div></div>
+    <div class="grid" id="calGrid"></div>
+    <button class="closebtn" id="closeCal">Schließen</button>
+  </div>
+</div>
+
+<script>
+  const EXERCISES = [
+    { key: "pushups", label: "Push ups", goal: 100 },
+    { key: "situps", label: "Sit ups", goal: 100 },
+    { key: "squats", label: "Squats", goal: 100 },
+    { key: "pullups", label: "Pull ups", goal: 50 },
+    { key: "km", label: "KM ge-\nlaufen", goal: 10 },
+  ];
+  const STORAGE_PREFIX = "fitnessaero:";
+
+  function toKey(d) {
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+  function emptyEntry(){ return {pushups:0,situps:0,squats:0,pullups:0,km:0}; }
+  function loadEntry(key){
+    try { const raw = localStorage.getItem(STORAGE_PREFIX+key); return raw ? JSON.parse(raw) : emptyEntry(); }
+    catch { return emptyEntry(); }
+  }
+  function saveEntry(key, entry){ localStorage.setItem(STORAGE_PREFIX+key, JSON.stringify(entry)); }
+  function completion(entry){
+    if(!entry) return 0;
+    const ratios = EXERCISES.map(e => Math.min(1, (entry[e.key]||0)/e.goal));
+    return ratios.reduce((a,b)=>a+b,0)/EXERCISES.length;
+  }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let selected = new Date(today);
+  let viewMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  const dayLabelEl=document.getElementById("dayLabel"), dateSubEl=document.getElementById("dateSub");
+  const rowsEl=document.getElementById("rows"), barFillEl=document.getElementById("barFill"), pctTextEl=document.getElementById("pctText");
+
+  function labelForDay(d){
+    const diff = Math.round((d-today)/86400000);
+    if(diff===0) return "Heute";
+    if(diff===-1) return "Gestern";
+    if(diff===1) return "Morgen";
+    return d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"});
+  }
+
+  function renderDay(){
+    const key = toKey(selected);
+    const entry = loadEntry(key);
+    const isFuture = selected > today;
+
+    dayLabelEl.textContent = labelForDay(selected);
+    dateSubEl.textContent = selected.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+
+    rowsEl.innerHTML = "";
+    EXERCISES.forEach(ex=>{
+      const val = entry[ex.key]||0;
+      const done = val >= ex.goal;
+      const row = document.createElement("div");
+      row.className="row";
+      row.innerHTML = `
+        <div class="exlabel">${ex.label}</div>
+        <div class="steps">
+          <button class="stepbtn" data-ex="${ex.key}" data-d="1" ${isFuture?"disabled":""}>&#9650;</button>
+          <button class="stepbtn" data-ex="${ex.key}" data-d="-1" ${isFuture?"disabled":""}>&#9660;</button>
+        </div>
+        <div class="val ${done?"done":""}">${String(val).padStart(2,"0")}/${ex.goal}</div>
+      `;
+      rowsEl.appendChild(row);
+    });
+
+    rowsEl.querySelectorAll(".stepbtn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const exKey = btn.dataset.ex, delta = Number(btn.dataset.d);
+        const e = loadEntry(key);
+        e[exKey] = Math.max(0,(e[exKey]||0)+delta);
+        saveEntry(key,e);
+        renderDay();
+      });
+    });
+
+    const pct = Math.round(completion(entry)*100);
+    barFillEl.style.width = pct+"%";
+    pctTextEl.textContent = pct+"% erledigt";
+  }
+
+  document.getElementById("prevDay").addEventListener("click",()=>{
+    selected.setDate(selected.getDate()-1); selected=new Date(selected); renderDay();
+  });
+  document.getElementById("nextDay").addEventListener("click",()=>{
+    selected.setDate(selected.getDate()+1); selected=new Date(selected); renderDay();
+  });
+
+  const overlay=document.getElementById("overlay"), monthLabelEl=document.getElementById("monthLabel"), calGridEl=document.getElementById("calGrid");
+
+  function renderCalendar(){
+    monthLabelEl.textContent = viewMonth.toLocaleDateString("de-DE",{month:"long",year:"numeric"});
+    const year=viewMonth.getFullYear(), month=viewMonth.getMonth();
+    const firstDay=new Date(year,month,1);
+    const startOffset=(firstDay.getDay()+6)%7;
+    const daysInMonth=new Date(year,month+1,0).getDate();
+
+    calGridEl.innerHTML="";
+    for(let i=0;i<startOffset;i++) calGridEl.appendChild(document.createElement("div"));
+    for(let d=1; d<=daysInMonth; d++){
+      const date=new Date(year,month,d);
+      const key=toKey(date);
+      const isFuture = date>today;
+      const isToday = key===toKey(today);
+      const isSelected = key===toKey(selected);
+      const pct = isFuture ? 0 : completion(loadEntry(key));
+
+      const cell=document.createElement("button");
+      cell.className="daycell"+(isFuture?" future":"")+(isToday?" today":"")+(isSelected?" selected":"");
+      cell.textContent=d;
+      if(!isFuture && pct>0){
+        cell.style.background = `rgba(255,255,255,${0.35+pct*0.5})`;
+        cell.style.boxShadow = `inset 0 0 0 999px rgba(46,159,110,${pct*0.55})`;
+      }
+      if(isFuture) cell.disabled=true;
+      cell.addEventListener("click",()=>{
+        selected=new Date(date); renderDay(); overlay.classList.remove("open");
+      });
+      calGridEl.appendChild(cell);
+    }
+  }
+
+  document.getElementById("openCal").addEventListener("click",()=>{
+    viewMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
+    renderCalendar(); overlay.classList.add("open");
+  });
+  document.getElementById("closeCal").addEventListener("click",()=>overlay.classList.remove("open"));
+  overlay.addEventListener("click",(e)=>{ if(e.target===overlay) overlay.classList.remove("open"); });
+  document.getElementById("prevMonth").addEventListener("click",()=>{
+    viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()-1,1); renderCalendar();
+  });
+  document.getElementById("nextMonth").addEventListener("click",()=>{
+    viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()+1,1); renderCalendar();
+  });
+
+  renderDay();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(()=>{});
+    });
+  }
+</script>
+</body>
+</html>
